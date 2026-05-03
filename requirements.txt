@@ -1,0 +1,10 @@
+streamlit
+langgraph
+langchain-ollama
+chromadb
+ddgs
+httpx
+trafilatura
+pypdf
+pydantic-settings
+pytest

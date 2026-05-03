@@ -1,0 +1,18 @@
+lezione 12/03 - ML supervised vs unsupervised
+
+allora il machine learning si divide praticamente in due cose principali, supervised dove abbiamo le label e poi unsupervised che le label non ci sono. poi ce ne sarebbe pure il reinforcement ma quello lo vediamo dopo forse.
+
+supervised: tipo regressione (output continuo, esempio prevedere il prezzo casa) e classificazione (output discreto tipo spam o no spam).
+unsupervised invece e tipo clustering (kmeans, dbscan ecc) che raggruppa cose simili senza sapere prima cosa sono.
+
+importante: il training set serve per addestrare e poi il test set per vedere se funziona davvero su dati nuovi mai visti. se uno usa lo stesso set per entrambi va in overfitting praticamente sempre. a volte si usa anche validation set in mezzo per il tuning degli iperparametri tipo per fare grid search o random search.
+
+prof ha detto che la cross validation e meglio di un singolo split soprattutto se il dataset e piccolino, tipo k-fold con k=5 o k=10 di solito.
+
+bias-variance tradeoff: modello troppo semplice = high bias (underfitting), modello troppo complesso = high variance (overfitting). bisogna trovare il punto giusto, regolarizzazione tipo L1 L2 aiuta.
+
+metriche: per classificazione accuracy ma se le classi sono sbilanciate meglio precision recall f1, oppure roc auc. per regressione invece mse rmse mae r quadro.
+
+domanda mia da chiedere: quando usare f1 vs auc? non mi e chiarissimo
+
+todo: rivedere slides su pca prima dell'esame

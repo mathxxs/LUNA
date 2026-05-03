@@ -1,0 +1,32 @@
+RAG appunti sparsi (da riordinare)
+
+rag = retrieval augmented generation, in pratica invece di far rispondere l llm a memoria gli dai prima dei pezzi di contesto presi da una knowledge base tua. cosi non si inventa le cose (hallucination) o almeno meno.
+
+pipeline tipica:
+1) prendi i documenti, li spezzi in chunk (chunking)
+2) ogni chunk lo passi a un embedding model che ti da un vettore
+3) salvi i vettori in un vector store (chroma, pinecone, qdrant, faiss ecc)
+4) quando arriva una query la embeddi pure lei e cerchi i top k chunk piu simili (cosine similarity di solito)
+5) metti i chunk + query nel prompt e chiedi all llm di rispondere
+
+problemi tipici:
+- chunk troppo piccoli = perdi contesto
+- chunk troppo grandi = rumore e finisci il context window
+- chunking semantico vs a finestra fissa, dipende
+- overlap tra chunk per non tagliare frasi a meta
+
+embedding: il prof ha mostrato che bge-m3 e nomic-embed-text vanno bene per italiano. openai text-embedding-3 anche ma costa.
+
+re-ranking: dopo il retrieval si puo passare un cross-encoder che riordina i chunk in base alla query, cohere rerank o bge-reranker-v2. migliora parecchio la qualita ma e piu lento.
+
+metriche per valutare un sistema rag:
+- retrieval: precision@k, recall@k, mrr
+- generation: faithfulness (la risposta usa davvero il contesto?), answer relevance
+- ragas e una libreria che li calcola con un llm giudice
+
+cose che NON sono RAG anche se sembrano:
+- fine tuning (li cambi i pesi del modello)
+- prompt stuffing semplice senza retrieval
+- function calling (tool use)
+
+domanda: quando conviene fare fine tuning invece che rag? mi sa che dipende da quanto cambia spesso la knowledge base, se cambia spesso meglio rag perche aggiorni solo l indice senza riaddestrare niente.

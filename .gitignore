@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+
+# Pytest
+.pytest_cache/
+
+# Streamlit
+# Solo i secrets — .streamlit/config.toml (palette tema) DEVE essere committato
+.streamlit/secrets.toml
+
+# LUNA Specific
+outputs/
+chroma_db/
+.env
+.claude/
+TODO.txt
+# Asset di lavoro pesante non più referenziato
+luna_hero.jpg
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

@@ -1,0 +1,24 @@
+appunti veloci docker - lezione di ieri (mi sa giovedi)
+
+docker in pratica e una cosa che ti fa girare app in container che sono come delle macchine virtuali ma piu leggeri perche condividono il kernel del sistema sotto. l immagine e tipo lo stampino e il container e l istanza che parte.
+
+dockerfile: file di testo dove scrivi le istruzioni per buildare l immagine. tipo:
+FROM python:3.11
+COPY . /app
+RUN pip install -r requirements.txt
+CMD python app.py
+
+poi fai docker build -t nome . e ti tira su l immagine. dopo docker run -p 8000:8000 nome e parte.
+
+cose che mi sono dimenticato in laboratorio:
+- volumes: per persistere i dati altrimenti se il container muore perdi tutto. -v hostpath:containerpath
+- networks: per far parlare piu container tra loro, default c e bridge
+- docker compose: quando hai piu servizi (tipo app + database + redis) fai un yaml e con un comando solo li tiri su tutti
+
+deploy in produzione si fa raramente con docker run a mano, di solito si usa kubernetes o tipo ecs di aws o cloud run di google. il prof ha menzionato anche docker swarm ma ha detto che ormai nessuno lo usa piu.
+
+problema che ho avuto: l immagine veniva 2gb, troppo. soluzione era usare alpine come base e multi stage build (prima fai build, poi copi solo l output nella seconda stage).
+
+NB: non confondere docker con vagrant!! sono cose diverse anche se sembrano simili.
+
+da verificare: differenza tra ENTRYPOINT e CMD nel dockerfile, non l ho capita bene

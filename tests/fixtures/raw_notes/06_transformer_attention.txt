@@ -1,0 +1,32 @@
+appunti transformer (paper attention is all you need, 2017)
+
+prima dei transformer si usavano rnn/lstm per le sequenze ma avevano due problemi grossi:
+1) processano in sequenza (lento, no parallelismo)
+2) perdono info su sequenze lunghe (vanishing gradient anche con lstm)
+
+il transformer butta tutto e usa solo self-attention + feedforward. niente ricorrenza. tutto in parallelo durante il training.
+
+self-attention in pratica: ogni token guarda tutti gli altri token e decide a quanto "prestare attenzione" a ciascuno. tre matrici Q K V (query key value) ottenute moltiplicando l input per pesi imparati.
+
+formula attention(Q,K,V) = softmax(QK^T / sqrt(dk)) V
+
+la divisione per sqrt(dk) serve a non far esplodere il softmax quando dk e grande. il prof ha detto che senza quella normalizzazione il training non parte proprio.
+
+multi-head attention: invece di una sola attention ne fai tante in parallelo (tipo 8 o 16 head), ognuna impara a guardare cose diverse, poi concateni e proietti. tipo una guarda relazioni sintattiche un altra semantiche ecc (ma in pratica non si interpretano cosi facili).
+
+positional encoding: siccome non c e ricorrenza il modello non sa l ordine dei token. quindi aggiungi al embedding di input un vettore che codifica la posizione. il paper originale usa sin/cos a frequenze diverse, oggi si usano spesso rotary (rope) o alibi.
+
+architettura completa:
+- encoder: stack di N blocchi (self-attention + ffn + residuali + layernorm)
+- decoder: come encoder ma con masked self-attention (puo guardare solo a sinistra, per non barare durante training next token prediction) + cross-attention sull output dell encoder
+
+bert usa solo encoder (per task di understanding tipo classificazione, ner)
+gpt usa solo decoder (per generation)
+t5 usa encoder-decoder
+
+cose che non mi sono chiare:
+- layer normalization vs batch normalization, perche nei transformer si usa layer? mi sa per via delle sequenze di lunghezza variabile
+- kv cache durante l inferenza: si tengono in memoria le k e v gia calcolate per non ricalcolarle ad ogni nuovo token, importante per la velocita di generation
+- complessita o(n^2) sulla sequenza, da qui tutti i tentativi di fare attention sparse o lineare (longformer, performer, mamba ecc)
+
+DA APPROFONDIRE: flash attention (e una ottimizzazione di memoria/velocita non un algoritmo diverso, sfrutta meglio la gerarchia di cache della gpu)

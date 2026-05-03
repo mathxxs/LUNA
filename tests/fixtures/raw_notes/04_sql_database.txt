@@ -1,0 +1,27 @@
+sql ripasso veloce - prima dell esame di basi di dati 2
+
+join: inner join prende solo le righe che matchano in entrambe le tabelle, left join prende tutto da sinistra anche se a destra non c e niente (mette null), right join uguale ma al contrario, full outer prende tutto da entrambe.
+
+esempio scemo: tabella utenti e tabella ordini. se voglio gli utenti che hanno fatto almeno un ordine -> inner join. se voglio tutti gli utenti anche quelli che non hanno mai comprato -> left join utenti -> ordini.
+
+group by: serve a aggregare. select categoria, count(*) from prodotti group by categoria. attenzione che nel select puoi mettere solo le colonne in group by + funzioni di aggregazione (sum, avg, count, min, max). se metti altre colonne postgres ti urla, mysql a volte ti lascia ma il risultato e indeterminato.
+
+having vs where: where filtra prima del group by, having dopo. esempio: where eta > 18 (filtra le righe), having count(*) > 10 (filtra i gruppi).
+
+indici: servono per velocizzare le query ma occupano spazio e rallentano gli insert/update. b-tree e l indice classico, hash solo per equality, gin per fulltext o array, brin per dati ordinati per natura tipo timestamp.
+
+quando NON mettere un indice:
+- tabella piccola (full scan e piu veloce)
+- colonna che cambia tantissimo
+- colonna con poca cardinalita (tipo un boolean)
+
+normalizzazione: 1nf 2nf 3nf bcnf, in pratica eviti la ridondanza spezzando in piu tabelle. ma in olap/datawarehouse spesso si denormalizza apposta per fare query veloci (star schema, snowflake schema).
+
+transazioni: acid - atomicity consistency isolation durability. livelli di isolamento: read uncommitted, read committed, repeatable read, serializable. piu sale piu sicuro ma piu lento.
+
+cose strane che mi confondono:
+- coalesce vs nullif: coalesce restituisce il primo non null, nullif restituisce null se i due argomenti sono uguali
+- exists vs in: exists di solito piu veloce su subquery grandi
+- window functions (over partition by) le devo riguardare, mi sa che il prof le chiede
+
+todo: esercizi su row_number rank dense_rank, sempre li sbaglio

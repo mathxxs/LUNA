@@ -1,0 +1,27 @@
+statistica inferenziale - test di ipotesi (lezione confusa, da riguardare)
+
+allora il test di ipotesi in pratica funziona cosi: tu hai un ipotesi nulla H0 (tipo "la media e 5") e un ipotesi alternativa H1 (la media e diversa da 5, oppure maggiore, oppure minore a seconda del test). poi raccogli i dati e calcoli un p-value.
+
+p-value: la probabilita di osservare un risultato cosi estremo (o piu) ASSUMENDO che H0 sia vera. attenzione che NON e la probabilita che H0 sia vera, e una cosa che tutti sbagliano.
+
+se p-value < alpha (di solito 0.05) allora rifiuti H0. ma rifiutare H0 non vuol dire che H1 e vera al 100%, vuol dire solo che i dati sono incompatibili con H0.
+
+errori:
+- tipo 1: rifiutare H0 quando in realta era vera (falso positivo) -> probabilita = alpha
+- tipo 2: NON rifiutare H0 quando era falsa (falso negativo) -> probabilita = beta
+- potenza del test = 1 - beta, dipende da sample size, effect size e alpha
+
+test piu comuni:
+- t-test: confronto medie (uno o due campioni), assume normalita
+- chi quadro: variabili categoriche, tabelle di contingenza
+- anova: confronto piu di due medie (one way, two way)
+- mann whitney / wilcoxon: non parametrici, quando la normalita non c e
+- kolmogorov smirnov: per testare se due distribuzioni sono uguali
+
+il prof ha insistito su una cosa: testing multiplo. se fai tanti test sullo stesso dataset il rischio di falso positivo esplode (problema del p-hacking). correzione di bonferroni (alpha/n) o fdr di benjamini-hochberg.
+
+intervallo di confidenza al 95%: in pratica se ripetessi l esperimento tante volte il 95% degli intervalli conterebbe il vero parametro. NON e "ho il 95% di probabilita che il parametro sia li dentro" (questa e l interpretazione bayesiana, diversa).
+
+bayesiano vs frequentista: i frequentisti vedono il parametro come fisso e i dati come random, i bayesiani il contrario. con prior + likelihood -> posterior (teorema di bayes). al corso facciamo principalmente frequentista ma il prof ha detto che in industria oggi tanto bayesiano soprattutto con pymc o stan.
+
+dubbio: quando uso t-test e quando z-test? mi sa che z-test e quando conosci la varianza vera della popolazione (quasi mai nella realta), t-test quando la stimi dal campione. con n grande tendono a coincidere.
