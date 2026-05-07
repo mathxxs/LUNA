@@ -95,7 +95,45 @@ I tempi sono indicativi e variano con la macchina, la lunghezza dell'input e il 
 | save_output | < 1 s | I/O. |
 | **Totale tipico** | **~ 3 min** | |
 
-> Nota: il `critic` è il collo di bottiglia voluto. Usa `reasoning=True` (thinking di qwen3.5) per verificare il rispetto del template punto per punto. Disattivare il thinking renderebbe il pipeline ~10× più veloce ma con verifica meno affidabile.
+> Nota: il `critic` usa `reasoning=True` (thinking di qwen3.5) sui draft brevi (< 1500 parole) per verificare il rispetto del template punto per punto, e `reasoning=False` su draft lunghi per evitare blocchi prolungati. La soglia è adattiva.
+
+## Limitazioni note
+
+LUNA esegue tutta l'inferenza in locale tramite modelli della famiglia `qwen3.5` (2b / 4b / 9b). Questi modelli sono dimensionati per girare su hardware consumer ma hanno limiti riconosciuti su task di **fedeltà su input lunghi**. Per essere onesti, sotto cosa aspettarsi:
+
+### Limite massimo dell'input (Feature A — appunti)
+
+Il sistema accetta input fino a **800 parole** (circa 1–2 pagine A4 di appunti). In questo range la pipeline funziona a regime completo:
+
+- Il `linguist` corregge grammatica, accenti e punteggiatura.
+- Lo `structurer` aggiunge heading H2/H3 dove il testo lo suggerisce.
+- Il `writer_notes` rifinisce e integra eventuali ricerche web direttamente nel testo.
+
+**Sopra le 800 parole**, la UI rifiuta l'elaborazione con un messaggio esplicito. Questa è una scelta di design: i modelli locali della famiglia `qwen3.5` (2b / 4b / 9b) tendono a sintetizzare o sostituire contenuto su input lunghi, producendo output non affidabili. Invece di restituire un risultato di bassa qualità, il sistema chiede all'utente di **dividere il documento in blocchi** e processarli separatamente.
+
+**Workaround per documenti lunghi:**
+- Splitta il PDF/testo in sezioni di 1–2 pagine.
+- Processa ciascuna sezione come un input separato in Tab 1.
+- Concatena gli output salvati in `outputs/notes/`.
+
+> Nota tecnica: gli agent `linguist`, `structurer` e `writer_notes` includono comunque dei fallback deterministici (bypass LLM, length-sanity check) come difesa in profondità, attivi se il graph viene invocato direttamente bypassando la UI (es. da `demo.bat` o codice custom).
+
+### Indeterminismo dei modelli locali
+
+Anche su input brevi, gli LLM locali da 2–9 miliardi di parametri non sono deterministici. La stessa run può produrre output leggermente diversi tra esecuzioni successive. Se un output ti sembra impoverito, **rilanciare la pipeline** è sempre lecito.
+
+### Web augmentation e qualità delle fonti
+
+Quando "Integra con ricerca web" è attivo, il sistema interroga DuckDuckGo e fa fetching con `trafilatura`. La qualità delle integrazioni dipende da:
+
+- **Disponibilità delle fonti**: alcuni siti restituiscono 403/404 (paywall, anti-scraping). Il sistema le segnala e prosegue.
+- **Pertinenza**: le fonti scelte non sono sempre autorevoli. Il searcher applica un filtro conservativo per scartare URL chiaramente non-articoli (pagine tag/categoria, hosting community), ma non valuta l'autorevolezza editoriale.
+
+### Hardware consigliato
+
+- 16 GB di RAM o più per `qwen3.5:9b`.
+- GPU dedicata accelera sensibilmente. Senza GPU, i tempi indicati nella sezione *Performance* possono raddoppiare o triplicare.
+- Su CPU pura, una run con web augmentation può richiedere 10–15 minuti.
 
 ## Troubleshooting
 - **`ModuleNotFoundError: No module named 'agents'` quando lanci pytest:** 
@@ -122,5 +160,5 @@ pytest tests/test_graphs_e2e.py --run-slow -v
 
 ## Licenza / Crediti
 Progetto accademico per il corso di Laboratorio di Data Science (UNIVPM, A.A. 2025/2026).
-Professore Mensi
-Studente: Matheus Soares Campos
+Professore Mensi.
+Studente: Matheus Soares Campos.

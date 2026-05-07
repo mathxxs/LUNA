@@ -60,7 +60,7 @@ def make_progress_tracker(phases: list[str], placeholder):
 
 st.set_page_config(page_title="LUNA", page_icon="luna_logo_icon.png", layout="wide", initial_sidebar_state="expanded")
 
-st.image("logo_luna.png", use_container_width=True)
+st.image("logo_luna.png", width="stretch")
 st.caption("**Local University Notes Assistant** — Sistema multi-agente locale per Note Enhancement e Topic Research (100% Locale, zero cloud).")
 st.divider()
 
@@ -165,7 +165,35 @@ with tab_notes:
         
     notes_title = st.text_input("Titolo (opzionale)", key="notes_title")
     notes_web = st.toggle("Integra con ricerca web", value=False, key="notes_web")
-    
+
+    # Hard limit: sopra questa soglia il sistema rifiuta di processare
+    # per evitare output di bassa qualità (i modelli locali della famiglia
+    # qwen3.5 non garantiscono fedeltà su input lunghi).
+    HARD_INPUT_LIMIT = 800
+    word_count = len(notes_text.split()) if notes_text.strip() else 0
+    if notes_file is not None and word_count == 0:
+        st.caption(
+            f"📄 File caricato: `{notes_file.name}`. La lunghezza verrà valutata "
+            f"dopo l'estrazione. Se supera {HARD_INPUT_LIMIT} parole, "
+            f"l'elaborazione verrà rifiutata."
+        )
+    elif word_count > HARD_INPUT_LIMIT:
+        st.error(
+            f"❌ Input troppo lungo: **{word_count} parole** "
+            f"(limite massimo: {HARD_INPUT_LIMIT}).\n\n"
+            f"Il sistema rifiuta di processare input più lunghi per garantire "
+            f"la qualità dell'output: i modelli locali su input lunghi tendono "
+            f"a sintetizzare o perdere contenuto.\n\n"
+            f"**Cosa fare**: dividi gli appunti in blocchi (massimo "
+            f"{HARD_INPUT_LIMIT} parole ciascuno) e processali separatamente. "
+            f"Vedi README, sezione *Limitazioni note*."
+        )
+    elif word_count > 0:
+        st.caption(
+            f"✏️ Input: **{word_count} parole** — modalità completa "
+            f"(linguist + structurer + writer LLM attivi)."
+        )
+
     if st.button("Esegui pipeline", key="notes_run", type="primary"):
         resolved_text = ""
         if notes_text.strip():
@@ -179,8 +207,17 @@ with tab_notes:
             finally:
                 tmp_path.unlink()
                 
+        resolved_word_count = len(resolved_text.split()) if resolved_text.strip() else 0
+
         if not resolved_text.strip():
             st.warning("Inserisci o carica del testo prima di eseguire.")
+        elif resolved_word_count > HARD_INPUT_LIMIT:
+            st.error(
+                f"❌ Input troppo lungo: **{resolved_word_count} parole** "
+                f"(limite: {HARD_INPUT_LIMIT}). Elaborazione interrotta.\n\n"
+                f"Dividi il documento in blocchi più piccoli e processali "
+                f"separatamente."
+            )
         else:
             resolved_title = notes_title.strip() if notes_title.strip() else "appunti"
             

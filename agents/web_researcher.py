@@ -23,11 +23,24 @@ def web_researcher(state: NotesState) -> NotesState:
     prompt_path = Path(__file__).parent.parent / "prompts" / "web_researcher.md"
     system_prompt = prompt_path.read_text(encoding="utf-8")
     llm = get_llm(ModelTier.HEAVY)
-    
+
     findings = []
-    
-    for i, gap in enumerate(gaps):
-        emit("WebResearcher", "INFO", f"Researching gap {i+1}/{len(gaps)}: {gap.get('missing', '')}")
+
+    # Cap sul numero di gap elaborati: ogni gap aggiunge ~150-300 parole
+    # di summary al context del writer_notes. Più di 4-5 gap saturano il
+    # context e fanno deviare il writer. Selezioniamo i primi MAX_GAPS gap
+    # (quelli identificati per primi dal gap_detector, in genere i più
+    # rilevanti).
+    MAX_GAPS_TO_PROCESS = 4
+    gaps_to_process = gaps[:MAX_GAPS_TO_PROCESS]
+    if len(gaps) > MAX_GAPS_TO_PROCESS:
+        emit(
+            "WebResearcher", "INFO",
+            f"Processing top {MAX_GAPS_TO_PROCESS} of {len(gaps)} gaps to limit downstream context."
+        )
+
+    for i, gap in enumerate(gaps_to_process):
+        emit("WebResearcher", "INFO", f"Researching gap {i+1}/{len(gaps_to_process)}: {gap.get('missing', '')}")
         
         # Ask LLM for a query
         query_prompt = f"Lacuna:\n{gap}\n\nFornisci SOLO la stringa di ricerca più appropriata (max 6 parole)."

@@ -3,21 +3,46 @@ from agents import NotesState
 from core.llm import get_llm, ModelTier
 from core.progress import emit
 
+# Soglia oltre la quale il writer LLM tende a comprimere/sintetizzare
+# l'input invece di preservarlo verbatim, anche con prompt esplicito.
+# Sopra questa soglia, andiamo deterministici anche quando ci sono
+# web findings da integrare.
+LONG_INPUT_THRESHOLD = 1000
 
-def _build_deterministic_draft(structured: str, gaps: list) -> str:
+
+def _build_deterministic_draft(structured: str, gaps: list, web_findings: list = None) -> str:
     """Compose the final draft without invoking the LLM.
 
-    The structurer's output is already a headed Markdown document; we
-    just append non-resolved-gap callouts at the end so the user sees
-    what looked thin. Used when there is no web finding to integrate
-    and no critic feedback to address — i.e. when the LLM would have
-    nothing meaningful to add but tends to hallucinate or erase
-    content under those conditions.
+    Output: structured verbatim + web findings as callouts + unresolved-gap
+    callouts. Used when the LLM would have nothing meaningful to add (no
+    findings, no critic feedback) OR when the input is too long for the
+    LLM to handle reliably (it tends to compress/erase content under load).
     """
+    if web_findings is None:
+        web_findings = []
+
     parts = [structured.rstrip()]
-    if gaps:
-        parts.append("")  # blank line before callouts
-        for gap in gaps:
+
+    # Append web findings as canonical callouts.
+    if web_findings:
+        parts.append("")
+        for finding in web_findings:
+            summary = (finding.get("summary") or "").strip()
+            source = (finding.get("source") or "").strip()
+            line = f"> **Integrazione (web):** {summary}"
+            if source:
+                line += f" [Fonte: {source}]"
+            parts.append(line)
+
+    # Append unresolved-gap callouts (gaps NOT covered by any web finding).
+    # If there are no web findings, all gaps count as unresolved (preserves
+    # the original deterministic-path behaviour).
+    covered = {f.get("gap_ref") for f in web_findings if "gap_ref" in f}
+    unresolved = [g for i, g in enumerate(gaps) if i not in covered]
+    if unresolved:
+        if not web_findings:
+            parts.append("")
+        for gap in unresolved:
             location = (gap.get("location") or "").strip()
             missing = (gap.get("missing") or "").strip()
             hint = (gap.get("hint") or "").strip()
@@ -29,6 +54,7 @@ def _build_deterministic_draft(structured: str, gaps: list) -> str:
             if not line.endswith("."):
                 line += "."
             parts.append(line)
+
     return "\n".join(parts)
 
 
@@ -41,14 +67,29 @@ def writer_notes(state: NotesState) -> NotesState:
     critic_feedback = state.get("critic_feedback", "")
     title = state.get("title", "appunti")
 
-    # Fast path: no web integration to do, no critic feedback to
-    # address. The LLM has no meaningful task here — qwen3.5:9b under
-    # such conditions tends to (a) erase the user's body and replace
-    # it with chat-mode summaries, (b) fabricate web callouts despite
-    # web_findings being empty. Bypass it entirely.
-    if not web_findings and not critic_feedback.strip():
-        emit("WriterNotes", "INFO", "Deterministic build (no web findings, no critic feedback)")
-        state["draft"] = _build_deterministic_draft(structured, gaps)
+    structured_word_count = len(structured.split())
+    no_critic_feedback = not critic_feedback.strip()
+
+    # Fast path 1: nothing meaningful for the LLM to do (no web findings,
+    # no critic feedback). qwen3.5:9b under such conditions tends to (a)
+    # erase the user's body and replace it with chat-mode summaries,
+    # (b) fabricate web callouts despite web_findings being empty.
+    #
+    # Fast path 2: input too long. Even with web findings the LLM
+    # compresses the user's content (~50% loss observed at 2300 words).
+    # Going deterministic preserves fidelity at the cost of LLM polish.
+    trigger_deterministic = no_critic_feedback and (
+        not web_findings or structured_word_count > LONG_INPUT_THRESHOLD
+    )
+    if trigger_deterministic:
+        reason = (
+            "no web findings, no critic feedback"
+            if not web_findings
+            else f"long input ({structured_word_count} words > {LONG_INPUT_THRESHOLD}), "
+                 f"integrating {len(web_findings)} web findings"
+        )
+        emit("WriterNotes", "INFO", f"Deterministic build ({reason})")
+        state["draft"] = _build_deterministic_draft(structured, gaps, web_findings)
         emit("WriterNotes", "INFO", "Done.")
         return state
 
@@ -103,14 +144,14 @@ def writer_notes(state: NotesState) -> NotesState:
 
         if not continuation:
             emit("WriterNotes", "WARNING", "Empty model output, falling back to deterministic draft")
-            state["draft"] = _build_deterministic_draft(structured, gaps)
+            state["draft"] = _build_deterministic_draft(structured, gaps, web_findings)
         elif continuation.startswith("# "):
             state["draft"] = continuation
         else:
             state["draft"] = prefix + continuation
     except Exception as e:
         emit("WriterNotes", "ERROR", f"LLM call failed: {e}")
-        state["draft"] = _build_deterministic_draft(structured, gaps)
+        state["draft"] = _build_deterministic_draft(structured, gaps, web_findings)
 
     emit("WriterNotes", "INFO", "Done.")
     return state
